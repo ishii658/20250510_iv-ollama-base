@@ -25,7 +25,7 @@ ionic vue を使った ollama のチャットアプリケーションのサン�
 sequenceDiagram
     participant user as webブラウザ
     participant wsrv as webサーバー
-    participant ollama as Ollama API
+    participant ollama as Ollama API<BR>サーバー
 
     wsrv ->> user: html,css,js
     user ->> ollama: LLM問い合わせ

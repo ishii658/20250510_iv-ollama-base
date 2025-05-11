@@ -15,6 +15,7 @@ ionic vue を使った ollama のチャットアプリケーションのサン�
 
 ![構成図](doc/blockDIagram01.drawio.svg)
 
+* このプロジェクトに ollama api のサーバーは含まれません。
 * webブラウザは python のwebサーバーから ionic vue のhtml,css,js を取得します。
 * webブラウザは、webサーバーと同じサーバーで動いている(ポートは異なる11434) ollama のAPIに接続します。
 

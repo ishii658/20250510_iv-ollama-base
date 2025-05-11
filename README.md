@@ -64,6 +64,20 @@ sequenceDiagram
     ├── tsconfig.node.json
     └── vite.config.ts
 ```
+## ollama api サーバー
+
+ollama の api サーバーが webサーバー(もしくはvuejs開発サーバー)と同じサーバーの 11434 ポートで動作している
+想定で動作します。chatなどのLLM問い合わせ先が webサーバーの11434ポートに接続します。
+
+ollama の api サーバーの構築は https://github.com/ollama/ollama を参考にしてください。
+
+Linux の場合、以下の手順で ollama api サーバーを動作させることができます。
+
+* https://github.com/ollama/ollama/releases から最新のリリースをダウンロードし、解凍します。
+  * 自分の利用している OS のアーキテクチャに合わせて適切なファイルを選択してください。
+* Linux の場合、　展開したディレクトリの binにある ollama を実行します。
+  * 展開ディレクトリ/bin/ollama
+  * 上記方法はOS起動後毎回行う必要があります
 
 ## python webサーバー
 

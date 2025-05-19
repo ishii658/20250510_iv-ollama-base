@@ -16,8 +16,9 @@ const isOpen = ref(false)
 <style scoped>
 .bg-green {
   background-color: lightgreen;
-  padding: 10px;
+  padding: 0px;
   border: 1px solid #ccc;
   border-radius: 5px;
+  margin-bottom: -10px;
 }
 </style>

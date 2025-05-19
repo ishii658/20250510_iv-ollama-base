@@ -1,25 +1,35 @@
 // 指定した tag に囲まれたコンテンツを分離します。
 
-export function separateTagContent(input: string, tagName: string): [ string | null, string | null ] {
-    // Escape the tag name for use in a regular expression
+export function separateTagContent(input: string, tagName: string): [string | null, string | null] {
+    // タグ名を正規表現に安全に変換
     const escapedTagName = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    // Construct regex to match the opening and closing tags
+    
+    // タグの内容を抽出する正規表現
     const regex = new RegExp(`<${escapedTagName}>([\s\S]*?)<\/${escapedTagName}>`);
     const tttMatch = input.match(regex);
 
-    // Extract the content between the tags
+    // タグ内の内容を取得（トリム）
     const tttContent = tttMatch ? tttMatch[1].trim() : null;
 
-    // Find the index of the closing tag
-    const closingTag = `</${tagName}>`;
-    const closingTagIndex = input.indexOf(closingTag);
-
-    // Extract the rest of the string after the closing tag
+    // タグ以降の文字列を取得（トリム）
     let rest = null;
-    if (closingTagIndex !== -1) {
-        rest = input.substring(closingTagIndex + closingTag.length).trim();
+    if (tttMatch) {
+        const fullMatch = tttMatch[0];
+        const restStartIndex = tttMatch.index + fullMatch.length;
+        rest = input.substring(restStartIndex).trim();
     }
 
-    return [ tttContent, rest ];
+    return [tttContent, rest];
+}
+
+export function splitThinkContent(str: string): { thinkContent: string; afterThink: string } {
+  const match = str.match(/<think>(.*?)<\/think>(.*)/s);
+  if (match && match.length >= 3) {
+    return {
+      thinkContent: match[1],
+      afterThink: match[2]
+    };
+  } else {
+    return { thinkContent: '', afterThink: str };
+  }
 }

@@ -2,11 +2,12 @@
 import {reactive} from 'vue';
 import {Ollama} from 'ollama/dist/browser';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-import { IonGrid, IonRow, IonCol, IonTextarea } from '@ionic/vue';
-
-import { MdPreview, MdCatalog } from 'md-editor-v3';
+import { IonGrid, IonRow, IonCol, IonTextarea, IonButton } from '@ionic/vue';
+import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import 'md-editor-v3/lib/style.css';
+import {splitThinkContent} from '../util/separateTagContent';
+import think from '../components/think.vue';
 
 import selectModel from '../components/selectModel.vue';
 
@@ -25,6 +26,9 @@ interface pValType {
   qBusy: boolean;
   /** 履歴 model: user|モデル名|think */
   history: {msg:string, model:string}[];
+
+  del_toggle: boolean;
+  think_toggle: boolean;
 }
 
 /** リアクティブな変数 */
@@ -33,6 +37,8 @@ const pVal = reactive<pValType>({
   answer: '',
   qBusy: false,
   history: [],
+  del_toggle: false,
+  think_toggle: false,
 });
 
 /** ollama サーバーURL とモデル */
@@ -67,9 +73,12 @@ async function onSubmit() {
   const send_messages = [];
   // 問
   send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
-  if(ollamaServerModel.model.includes("qwen3")){
-    pVal.question += '\n' + '/no_think'
+  if(!pVal.think_toggle){
+    if(ollamaServerModel.model.includes("qwen3")){
+      pVal.question += '\n' + '/no_think'
+    }
   }
+
   send_messages.push({'role': 'user', 'content': pVal.question})
   // リアクティブな変数に回答を格納するためのオブジェクトを作成
   const response = await ollamaServer.chat({
@@ -88,13 +97,33 @@ async function onSubmit() {
   // 問から no_think の文字列を削除
   const question_nothink = pVal.question.replace(/\/no_think/g, '');
   const question_think = question_nothink.replace(/\/think/g, '');
+
+  // 回答から think タグの中身を分離
+  const sp_answer = splitThinkContent(pVal.answer);
+
   // 履歴に追加
   pVal.history.push({msg: question_think, model: "user"});
-  pVal.history.push({msg: pVal.answer, model: ollamaServerModel.model});
+
+  // think の中身を履歴に追加
+  if(sp_answer["thinkContent"] != null){
+    pVal.history.push({msg: sp_answer["thinkContent"], model: "think"});
+  }
+  if(sp_answer["afterThink"] != null){
+    pVal.history.push({msg: sp_answer["afterThink"], model: ollamaServerModel.model});
+  }
+  // pVal.history.push({msg: pVal.answer, model: ollamaServerModel.model});
+  
 
   // 回答領域をクリア
   pVal.question = '';
   pVal.answer = '';
+}
+
+function onClickHistory(index: number) {
+  if(pVal.del_toggle){
+    // 履歴から選択されたメッセージを削除
+    pVal.history.splice(index, 1);
+  }
 }
 
 </script>
@@ -104,7 +133,7 @@ async function onSubmit() {
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Ollama</ion-title>
-        <selectModel @modelSelected="onModelSelected"></selectModel>
+        <selectModel @modelSelected="onModelSelected" v-model:del_toggle="pVal.del_toggle" v-model:think_toggle="pVal.think_toggle"></selectModel>
       </ion-toolbar>
     </ion-header>
 
@@ -120,8 +149,22 @@ async function onSubmit() {
               </ion-col>
               <!-- 過去の履歴 -->
               <ion-col size="12" class="history">
+                <!-- model が user, think, それ以外で分ける. v-if で分ける -->
+                <ion-row>
+                  <ion-col v-if="pVal.history[index].model === 'user'" class="userstr" size="12" @click="onClickHistory(index)">
+                    <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                  </ion-col>
+                  <ion-col v-else-if="pVal.history[index].model === 'think'" class="thinkstr" size="12" @click="onClickHistory(index)">
+                    <think class="think">
+                      <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                    </think>
+                  </ion-col>
+                  <ion-col v-else class="otherstr" size="12" @click="onClickHistory(index)">
+                    <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                  </ion-col>
+                </ion-row>
                 <!-- <MdEditor :editorId="id" v-model="pVal.history[index].msg" previewOnly language="en-US"/> -->
-                <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
                 <!-- <MdCatalog :editorId="id" :scrollElement="scrollElement" />         -->
               </ion-col>
             </ion-row>
@@ -193,5 +236,22 @@ async function onSubmit() {
   border: 2px solid green;
   border-radius: 5px;
   margin-top: 2px;
+}
+
+.userstr{
+  background-color: aliceblue;
+}
+
+.thinkstr{
+  background-color: lightyellow;
+}
+
+.otherstr{
+  background-color: rgb(247, 242, 236);
+}
+
+.think{
+  padding: 0px;
+  margin: 0px;
 }
 </style>

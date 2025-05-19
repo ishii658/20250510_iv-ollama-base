@@ -1,7 +1,8 @@
 // ollama のモデルを選択するための UI コンポーネントを作成します。
 <script setup lang="ts">
-import {onMounted,reactive,defineEmits} from 'vue';
+import {onMounted,reactive,defineEmits, ref} from 'vue';
 import {IonButtons, IonSelect, IonSelectOption} from '@ionic/vue';
+import {IonToggle} from '@ionic/vue';
 import {Ollama} from 'ollama/dist/browser';
 
 /** イベント */
@@ -20,6 +21,9 @@ interface pValType {
 const pVal = reactive<pValType>({
   models: []
 });
+
+const del_toggle = defineModel<boolean>("del_toggle", {default: false})
+const think_toggle = defineModel<boolean>("think_toggle",{default: false});
 
 /** ollama サーバーからモデルのリストを取得する
  * 
@@ -65,13 +69,21 @@ function onModelChange(event: CustomEvent)
 </script>
 
 <template>
-  <IonButtons slot="end">
-    <IonSelect label="Model" placeholder="Select a model" @ion-change="onModelChange">
+  <ion-buttons  slot="end">
+    <ion-toggle v-model="del_toggle">del</ion-toggle>
+    <ion-toggle v-model="think_toggle">think</ion-toggle>
+    <ion-select label="Model" placeholder="Select a model" @ion-change="onModelChange">
       <!-- モデルのリストを表示する -->
-      <IonSelectOption v-for="model in pVal.models" :key="model" :value="model">{{ model }}</IonSelectOption>
-    </IonSelect>
-  </IonButtons>
+      <ion-select-option  v-for="model in pVal.models" :key="model" :value="model">{{ model }}</ion-select-option>
+    </ion-select>
+  </ion-buttons>
 </template>
 <style scoped>
 /* Add component-specific styles here */
+ion-toggle {
+  border: 2px solid #ccc;
+  padding: 5px;
+  margin-right: 5px;
+  border-radius: 5px;
+}
 </style>

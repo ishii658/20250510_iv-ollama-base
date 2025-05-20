@@ -1,0 +1,6 @@
+venv/
+node_modules/
+.mypy_cache/
+tmp*
+*.bak
+*.bk

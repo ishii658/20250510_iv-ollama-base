@@ -15,8 +15,10 @@ export function separateTagContent(input: string, tagName: string): [string | nu
     let rest = null;
     if (tttMatch) {
         const fullMatch = tttMatch[0];
-        const restStartIndex = tttMatch.index + fullMatch.length;
-        rest = input.substring(restStartIndex).trim();
+        if(tttMatch.index != undefined){
+          const restStartIndex = tttMatch.index + fullMatch.length;
+          rest = input.substring(restStartIndex).trim();
+        }
     }
 
     return [tttContent, rest];

@@ -7,7 +7,7 @@ import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import 'md-editor-v3/lib/style.css';
 import {splitThinkContent} from '../util/separateTagContent';
-import think from '../components/think.vue';
+import think from '../components/tt.vue';
 
 import selectModel from '../components/selectModel.vue';
 

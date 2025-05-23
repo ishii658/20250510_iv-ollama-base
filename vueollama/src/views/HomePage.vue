@@ -29,6 +29,7 @@ interface pValType {
 
   del_toggle: boolean;
   think_toggle: boolean;
+  history_toggle: boolean;
 }
 
 /** リアクティブな変数 */
@@ -39,6 +40,7 @@ const pVal = reactive<pValType>({
   history: [],
   del_toggle: false,
   think_toggle: false,
+  history_toggle: false,
 });
 
 /** ollama サーバーURL とモデル */
@@ -73,13 +75,31 @@ async function onSubmit() {
   const send_messages = [];
   // 問
   send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
+
+  // 履歴問い合わせのときは、今までのものを入れる
+  if(pVal.history_toggle){
+    for(let i=0; i<pVal.history.length; i++){
+      const row = pVal.history[i];
+      const model = row.model;
+      if( model == "user" ){
+        send_messages.push({'role': 'user', 'content': row.msg});
+      }
+      else{
+        send_messages.push({'role': 'assistant', 'content': row.msg});
+      }
+    }
+  }
+
+  // modelが qwen3 で think モード出ないときは /no_think をつける
   if(!pVal.think_toggle){
     if(ollamaServerModel.model.includes("qwen3")){
       pVal.question += '\n' + '/no_think'
     }
   }
 
+  // 最終質問を追加
   send_messages.push({'role': 'user', 'content': pVal.question})
+
   // リアクティブな変数に回答を格納するためのオブジェクトを作成
   const response = await ollamaServer.chat({
     model: ollamaServerModel.model,
@@ -126,6 +146,12 @@ function onClickHistory(index: number) {
   }
 }
 
+function clearHistory(){
+  pVal.history = [];
+  pVal.question = "";
+  pVal.answer = "";
+}
+
 </script>
 
 <template>
@@ -133,7 +159,11 @@ function onClickHistory(index: number) {
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Ollama</ion-title>
-        <selectModel @modelSelected="onModelSelected" v-model:del_toggle="pVal.del_toggle" v-model:think_toggle="pVal.think_toggle"></selectModel>
+        <selectModel @modelSelected="onModelSelected" 
+                     v-model:del_toggle="pVal.del_toggle" 
+                     v-model:think_toggle="pVal.think_toggle" 
+                     v-model:history_toggle="pVal.history_toggle"
+        ></selectModel>
       </ion-toolbar>
     </ion-header>
 
@@ -179,9 +209,14 @@ function onClickHistory(index: number) {
             </ion-textarea>
           </ion-col>
         </ion-row>
-          <ion-col size="12">
-            <ion-button expand="block" @click="onSubmit" v-if="!pVal.qBusy" style="margin-top: -20px;">実行</ion-button>
+        <ion-row>
+          <ion-col size="9">
+            <ion-button expand="block" @click="onSubmit" v-if="!pVal.qBusy" style="margin-top: -2px;">実行</ion-button>
           </ion-col>
+          <ion-col size="3">
+            <ion-button expand="block" @click="clearHistory" v-if="!pVal.qBusy" style="margin-top: -2px;">clear</ion-button>
+          </ion-col>
+        </ion-row>
       </ion-grid>    
     </ion-content>
   </ion-page>

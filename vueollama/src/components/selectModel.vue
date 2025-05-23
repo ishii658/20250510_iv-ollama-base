@@ -24,6 +24,7 @@ const pVal = reactive<pValType>({
 
 const del_toggle = defineModel<boolean>("del_toggle", {default: false})
 const think_toggle = defineModel<boolean>("think_toggle",{default: false});
+const history_toggle = defineModel<boolean>("history_toggle",{default:false})
 
 /** ollama サーバーからモデルのリストを取得する
  * 
@@ -72,6 +73,7 @@ function onModelChange(event: CustomEvent)
   <ion-buttons  slot="end">
     <ion-toggle v-model="del_toggle">del</ion-toggle>
     <ion-toggle v-model="think_toggle">think</ion-toggle>
+    <ion-toggle v-model="history_toggle">履歴質問</ion-toggle>
     <ion-select label="Model" placeholder="Select a model" @ion-change="onModelChange">
       <!-- モデルのリストを表示する -->
       <ion-select-option  v-for="model in pVal.models" :key="model" :value="model">{{ model }}</ion-select-option>

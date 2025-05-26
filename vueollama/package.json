@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vue-tsc && vite build",
+    "build:rel" : "vite build --mode production",
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test:unit": "vitest",

@@ -16,6 +16,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build:{
+    minify: 'terser',
+    sourcemap: true,
+  },
   test: {
     globals: true,
     environment: 'jsdom'

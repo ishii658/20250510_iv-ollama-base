@@ -7,7 +7,7 @@ import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import 'md-editor-v3/lib/style.css';
 import {splitThinkContent} from '../util/separateTagContent';
-import think from '../components/think.vue';
+import think from '../components/tt.vue';
 
 import selectModel from '../components/selectModel.vue';
 
@@ -26,11 +26,10 @@ interface pValType {
   qBusy: boolean;
   /** 履歴 model: user|モデル名|think */
   history: {msg:string, model:string}[];
-  /** chatに利用するためのメッセージ履歴 */
-  history_org: {role: string, content:string}[]
+
   del_toggle: boolean;
   think_toggle: boolean;
-  longMessage: boolean;
+  history_toggle: boolean;
 }
 
 /** リアクティブな変数 */
@@ -39,10 +38,9 @@ const pVal = reactive<pValType>({
   answer: '',
   qBusy: false,
   history: [],
-  history_org: [],
   del_toggle: false,
   think_toggle: false,
-  longMessage: false
+  history_toggle: false,
 });
 
 /** ollama サーバーURL とモデル */
@@ -77,34 +75,35 @@ async function onSubmit() {
   const send_messages = [];
   // 問
   send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
-  // chat用のmessage 最初はsystemメッセージ
-  if(pVal.history_org.length == 0){
-    pVal.history_org.push(send_messages[0])
+
+  // 履歴問い合わせのときは、今までのものを入れる
+  if(pVal.history_toggle){
+    for(let i=0; i<pVal.history.length; i++){
+      const row = pVal.history[i];
+      const model = row.model;
+      if( model == "user" ){
+        send_messages.push({'role': 'user', 'content': row.msg});
+      }
+      else{
+        send_messages.push({'role': 'assistant', 'content': row.msg});
+      }
+    }
   }
 
+  // modelが qwen3 で think モード出ないときは /no_think をつける
   if(!pVal.think_toggle){
     if(ollamaServerModel.model.includes("qwen3")){
       pVal.question += '\n' + '/no_think'
     }
   }
 
-  // 直前の質問のみ
+  // 最終質問を追加
   send_messages.push({'role': 'user', 'content': pVal.question})
-  //chat用のmessage
-  pVal.history_org.push({'role': 'user', 'content': pVal.question})
-
-  let sMsg:any[]
-  if(pVal.longMessage){
-    sMsg = pVal.history_org;
-  }
-  else{
-    sMsg = send_messages;
-  }
 
   // リアクティブな変数に回答を格納するためのオブジェクトを作成
   const response = await ollamaServer.chat({
     model: ollamaServerModel.model,
-    messages: sMsg,
+    messages: send_messages,
     stream: true
   });
 
@@ -118,9 +117,6 @@ async function onSubmit() {
   // 問から no_think の文字列を削除
   const question_nothink = pVal.question.replace(/\/no_think/g, '');
   const question_think = question_nothink.replace(/\/think/g, '');
-
-  // 回答をchat用メッセージに入れる
-  pVal.history_org.push({'role': 'assistant', 'content': pVal.answer})
 
   // 回答から think タグの中身を分離
   const sp_answer = splitThinkContent(pVal.answer);
@@ -150,6 +146,12 @@ function onClickHistory(index: number) {
   }
 }
 
+function clearHistory(){
+  pVal.history = [];
+  pVal.question = "";
+  pVal.answer = "";
+}
+
 </script>
 
 <template>
@@ -158,9 +160,9 @@ function onClickHistory(index: number) {
       <ion-toolbar>
         <ion-title>Ollama</ion-title>
         <selectModel @modelSelected="onModelSelected" 
-        v-model:del_toggle="pVal.del_toggle" 
-        v-model:think_toggle="pVal.think_toggle"
-        v-model:long-message="pVal.longMessage"
+                     v-model:del_toggle="pVal.del_toggle" 
+                     v-model:think_toggle="pVal.think_toggle" 
+                     v-model:history_toggle="pVal.history_toggle"
         ></selectModel>
       </ion-toolbar>
     </ion-header>
@@ -207,9 +209,14 @@ function onClickHistory(index: number) {
             </ion-textarea>
           </ion-col>
         </ion-row>
-          <ion-col size="12">
-            <ion-button expand="block" @click="onSubmit" v-if="!pVal.qBusy" style="margin-top: -20px;">実行</ion-button>
+        <ion-row>
+          <ion-col size="9">
+            <ion-button expand="block" @click="onSubmit" v-if="!pVal.qBusy" style="margin-top: -2px;">実行</ion-button>
           </ion-col>
+          <ion-col size="3">
+            <ion-button expand="block" @click="clearHistory" v-if="!pVal.qBusy" style="margin-top: -2px;">clear</ion-button>
+          </ion-col>
+        </ion-row>
       </ion-grid>    
     </ion-content>
   </ion-page>

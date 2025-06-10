@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vue-tsc && vite build",
-    "build:rel" : "vite build --mode production",
+    "build:rel": "vite build --mode production",
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test:unit": "vitest",
@@ -22,7 +22,7 @@
     "@ionic/vue-router": "^8.0.0",
     "ionicons": "^7.0.0",
     "md-editor-v3": "^5.5.1",
-    "ollama": "^0.5.15",
+    "ollama": "^0.5.16",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0"
   },

@@ -22,6 +22,8 @@ interface pValType {
   question: string;
   /** LLM の応答 */
   answer: string;
+  /** LLM think */
+  think: string;
   /** LLM問い合わせ中 */
   qBusy: boolean;
   /** 履歴 model: user|モデル名|think */
@@ -36,6 +38,7 @@ interface pValType {
 const pVal = reactive<pValType>({
   question: '',
   answer: '',
+  think: '',
   qBusy: false,
   history: [],
   del_toggle: false,
@@ -69,6 +72,7 @@ async function onSubmit() {
   pVal.qBusy = true;
   // 回答をクリアする
   pVal.answer = '';
+  pVal.think = '';
 
   const ollamaServer = new Ollama({host: ollamaServerModel.server}); // サーバーの URL を指定
 
@@ -90,49 +94,55 @@ async function onSubmit() {
     }
   }
 
-  // modelが qwen3 で think モード出ないときは /no_think をつける
-  if(!pVal.think_toggle){
-    if(ollamaServerModel.model.includes("qwen3")){
-      pVal.question += '\n' + '/no_think'
-    }
-  }
-
   // 最終質問を追加
   send_messages.push({'role': 'user', 'content': pVal.question})
 
-  // リアクティブな変数に回答を格納するためのオブジェクトを作成
-  const response = await ollamaServer.chat({
-    model: ollamaServerModel.model,
-    messages: send_messages,
-    stream: true
-  });
-
-  // 回答取得
-  for await (const part of response) {
-    pVal.answer += part.message.content;
+  let think_flag = false
+  // modelが qwen3 で think モード出ないときは /no_think をつける
+  if(pVal.think_toggle){
+    if(ollamaServerModel.model.includes("qwen3")||ollamaServerModel.model.includes("deepseek-r1")){
+      think_flag = true
+    }
   }
+
+  if(think_flag){
+    // リアクティブな変数に回答を格納するためのオブジェクトを作成
+    const response = await ollamaServer.chat({
+      model: ollamaServerModel.model,
+      messages: send_messages,
+      stream: true,
+      think: true
+    });
+        // 回答取得
+    for await (const part of response) {
+      pVal.answer += part.message.content;
+      pVal.think += part.message.thinking;
+    }
+  }
+  else{
+    // リアクティブな変数に回答を格納するためのオブジェクトを作成
+    const response = await ollamaServer.chat({
+      model: ollamaServerModel.model,
+      messages: send_messages,
+      stream: true
+    });
+    // 回答取得
+    for await (const part of response) {
+      pVal.answer += part.message.content;
+    }
+  }
+
 
   pVal.qBusy = false;
 
-  // 問から no_think の文字列を削除
-  const question_nothink = pVal.question.replace(/\/no_think/g, '');
-  const question_think = question_nothink.replace(/\/think/g, '');
-
-  // 回答から think タグの中身を分離
-  const sp_answer = splitThinkContent(pVal.answer);
-
   // 履歴に追加
-  pVal.history.push({msg: question_think, model: "user"});
+  pVal.history.push({msg: pVal.question, model: "user"});
 
   // think の中身を履歴に追加
-  if(sp_answer["thinkContent"] != null){
-    pVal.history.push({msg: sp_answer["thinkContent"], model: "think"});
-  }
-  if(sp_answer["afterThink"] != null){
-    pVal.history.push({msg: sp_answer["afterThink"], model: ollamaServerModel.model});
-  }
-  // pVal.history.push({msg: pVal.answer, model: ollamaServerModel.model});
-  
+  pVal.history.push({msg: pVal.think, model: "think"})
+
+  // 回答を履歴に
+  pVal.history.push({msg: pVal.answer, model: ollamaServerModel.model})
 
   // 回答領域をクリア
   pVal.question = '';

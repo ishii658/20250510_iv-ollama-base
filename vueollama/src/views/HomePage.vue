@@ -78,7 +78,7 @@ async function onSubmit() {
 
   const send_messages = [];
   // 問
-  send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
+  // send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
 
   // 履歴問い合わせのときは、今までのものを入れる
   if(pVal.history_toggle){
@@ -106,6 +106,8 @@ async function onSubmit() {
   }
 
   if(think_flag){
+    // system message
+    send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください.'})
     // リアクティブな変数に回答を格納するためのオブジェクトを作成
     const response = await ollamaServer.chat({
       model: ollamaServerModel.model,
@@ -116,15 +118,19 @@ async function onSubmit() {
         // 回答取得
     for await (const part of response) {
       pVal.answer += part.message.content;
-      pVal.think += part.message.thinking;
+      if(part.message.thinking !== undefined)
+        pVal.think += part.message.thinking;
     }
   }
   else{
+    // system message
+    send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 日本語で回答してください.'})
     // リアクティブな変数に回答を格納するためのオブジェクトを作成
     const response = await ollamaServer.chat({
       model: ollamaServerModel.model,
       messages: send_messages,
-      stream: true
+      stream: true,
+      think:false
     });
     // 回答取得
     for await (const part of response) {
@@ -147,6 +153,7 @@ async function onSubmit() {
   // 回答領域をクリア
   pVal.question = '';
   pVal.answer = '';
+  pVal.think = '';
 }
 
 function onClickHistory(index: number) {
@@ -160,6 +167,7 @@ function clearHistory(){
   pVal.history = [];
   pVal.question = "";
   pVal.answer = "";
+  pVal.think = "";
 }
 
 </script>
@@ -184,11 +192,11 @@ function clearHistory(){
           <ion-col size="12">
             <ion-row v-for="(item, index) in pVal.history" :key="index" class="historyarea">
               <!-- モデル名 -->
-              <ion-col size="12" class="modelstr">
+              <ion-col size="12" class="modelstr" v-if="pVal.history[index].msg !== ''">
                 {{ pVal.history[index].model }}
               </ion-col>
               <!-- 過去の履歴 -->
-              <ion-col size="12" class="history">
+              <ion-col size="12" class="history" v-if="pVal.history[index].msg !== ''">
                 <!-- model が user, think, それ以外で分ける. v-if で分ける -->
                 <ion-row>
                   <ion-col v-if="pVal.history[index].model === 'user'" class="userstr" size="12" @click="onClickHistory(index)">
@@ -210,6 +218,9 @@ function clearHistory(){
             </ion-row>
           </ion-col>
 
+          <ion-col size="12" v-if="pVal.think !== ''">
+            <MdPreview :editorId="id" :modelValue="pVal.think" language="en-US" />
+          </ion-col>
           <ion-col size="12">
             <MdPreview :editorId="id" :modelValue="pVal.answer" language="en-US" />
             <!-- <MdCatalog :editorId="id" :scrollElement="scrollElement" /> -->

@@ -100,7 +100,7 @@ async function onSubmit() {
   let think_flag = false
   // modelが qwen3 で think モード出ないときは /no_think をつける
   if(pVal.think_toggle){
-    if(ollamaServerModel.model.includes("qwen3")||ollamaServerModel.model.includes("deepseek-r1")){
+    if(ollamaServerModel.model.includes("qwen3")||ollamaServerModel.model.includes("deepseek-r1")||ollamaServerModel.model.includes("magistral:")){
       think_flag = true
     }
   }
@@ -176,7 +176,9 @@ function clearHistory(){
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Ollama</ion-title>
+        <ion-title>Ollama
+        <ion-button @click="clearHistory" v-if="!pVal.qBusy" style="margin-top: -2px;">clear</ion-button>
+        </ion-title>
         <selectModel @modelSelected="onModelSelected" 
                      v-model:del_toggle="pVal.del_toggle" 
                      v-model:think_toggle="pVal.think_toggle" 

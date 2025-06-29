@@ -10,6 +10,7 @@ import {splitThinkContent} from '../util/separateTagContent';
 import think from '../components/tt.vue';
 
 import selectModel from '../components/selectModel.vue';
+import ImgageUploader from '@/components/ImageUploader.vue'
 
 // markdown preview
 const id = 'preview-only';
@@ -207,6 +208,7 @@ function clearHistory(){
           <ion-col size="12">
             <ion-textarea aria-label="query" fill="outline" :auto-grow="true" v-model="pVal.question">
             </ion-textarea>
+            <ImgageUploader>img</ImgageUploader>
           </ion-col>
         </ion-row>
         <ion-row>

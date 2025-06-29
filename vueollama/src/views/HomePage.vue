@@ -31,6 +31,9 @@ interface pValType {
   del_toggle: boolean;
   think_toggle: boolean;
   history_toggle: boolean;
+
+  /** 画像 base64 */
+  img: string;
 }
 
 /** リアクティブな変数 */
@@ -42,6 +45,7 @@ const pVal = reactive<pValType>({
   del_toggle: false,
   think_toggle: false,
   history_toggle: false,
+  img:""
 });
 
 /** ollama サーバーURL とモデル */
@@ -99,7 +103,12 @@ async function onSubmit() {
   }
 
   // 最終質問を追加
-  send_messages.push({'role': 'user', 'content': pVal.question})
+  if(pVal.img == ''){
+    send_messages.push({'role': 'user', 'content': pVal.question})
+  }
+  else{
+    send_messages.push({'role': 'user', 'content': pVal.question, 'images': [pVal.img]})
+  }
 
   // リアクティブな変数に回答を格納するためのオブジェクトを作成
   const response = await ollamaServer.chat({
@@ -151,6 +160,11 @@ function clearHistory(){
   pVal.history = [];
   pVal.question = "";
   pVal.answer = "";
+}
+
+// 画像追加
+function handleImageUploaded(base64: string): void {
+  pVal.img = base64.split(",")[1]
 }
 
 </script>
@@ -208,7 +222,8 @@ function clearHistory(){
           <ion-col size="12">
             <ion-textarea aria-label="query" fill="outline" :auto-grow="true" v-model="pVal.question">
             </ion-textarea>
-            <ImgageUploader>img</ImgageUploader>
+            <ImgageUploader @image-uploaded="handleImageUploaded"
+            v-if="ollamaServerModel.model.includes('gemma3:') || ollamaServerModel.model.includes('qwen2.5vl:')">img</ImgageUploader>
           </ion-col>
         </ion-row>
         <ion-row>

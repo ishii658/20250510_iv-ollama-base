@@ -10,6 +10,7 @@ import {splitThinkContent} from '../util/separateTagContent';
 import think from '../components/tt.vue';
 
 import selectModel from '../components/selectModel.vue';
+import ImgageUploader from '@/components/ImageUploader.vue'
 
 // markdown preview
 const id = 'preview-only';
@@ -32,6 +33,9 @@ interface pValType {
   del_toggle: boolean;
   think_toggle: boolean;
   history_toggle: boolean;
+
+  /** 画像 base64 */
+  img: string;
 }
 
 /** リアクティブな変数 */
@@ -44,6 +48,7 @@ const pVal = reactive<pValType>({
   del_toggle: false,
   think_toggle: false,
   history_toggle: false,
+  img:""
 });
 
 /** ollama サーバーURL とモデル */
@@ -95,7 +100,11 @@ async function onSubmit() {
   }
 
   // 最終質問を追加
-  send_messages.push({'role': 'user', 'content': pVal.question})
+  if(pVal.img == ''){
+    send_messages.push({'role': 'user', 'content': pVal.question})
+  }else{
+    send_messages.push({'role': 'user', 'content': pVal.question, 'images': [pVal.img]})
+  }
 
   let think_flag = false
   // modelが qwen3 で think モード出ないときは /no_think をつける
@@ -170,6 +179,11 @@ function clearHistory(){
   pVal.think = "";
 }
 
+// 画像追加
+function handleImageUploaded(base64: string): void {
+  pVal.img = base64.split(",")[1]
+}
+
 </script>
 
 <template>
@@ -230,6 +244,8 @@ function clearHistory(){
           <ion-col size="12">
             <ion-textarea aria-label="query" fill="outline" :auto-grow="true" v-model="pVal.question">
             </ion-textarea>
+            <ImgageUploader @image-uploaded="handleImageUploaded"
+            v-if="ollamaServerModel.model.includes('gemma3:') || ollamaServerModel.model.includes('qwen2.5vl:')">img</ImgageUploader>
           </ion-col>
         </ion-row>
         <ion-row>

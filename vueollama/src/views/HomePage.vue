@@ -12,6 +12,8 @@ import think from '../components/tt.vue';
 import selectModel from '../components/selectModel.vue';
 import ImgageUploader from '@/components/ImageUploader.vue'
 
+import mdp from '../components/mdview.vue';
+
 // markdown preview
 const id = 'preview-only';
 // const scrollElement = document.documentElement;
@@ -122,7 +124,10 @@ async function onSubmit() {
       model: ollamaServerModel.model,
       messages: send_messages,
       stream: true,
-      think: true
+      think: true,
+      options: {
+         num_ctx: 12000
+      }
     });
         // 回答取得
     for await (const part of response) {
@@ -139,7 +144,10 @@ async function onSubmit() {
       model: ollamaServerModel.model,
       messages: send_messages,
       stream: true,
-      think:false
+      think:false,
+      options: {
+         num_ctx: 12000
+      }
     });
     // 回答取得
     for await (const part of response) {
@@ -216,15 +224,18 @@ function handleImageUploaded(base64: string): void {
                 <!-- model が user, think, それ以外で分ける. v-if で分ける -->
                 <ion-row>
                   <ion-col v-if="pVal.history[index].model === 'user'" class="userstr" size="12" @click="onClickHistory(index)">
-                    <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                    <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                    <mdp :markdown="pVal.history[index].msg"></mdp>
                   </ion-col>
                   <ion-col v-else-if="pVal.history[index].model === 'think'" class="thinkstr" size="12" @click="onClickHistory(index)">
                     <think class="think">
-                      <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                      <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                      <mdp :markdown="pVal.history[index].msg"></mdp>
                     </think>
                   </ion-col>
                   <ion-col v-else class="otherstr" size="12" @click="onClickHistory(index)">
-                    <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" />
+                    <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                    <mdp :markdown="pVal.history[index].msg"></mdp>
                   </ion-col>
                 </ion-row>
                 <!-- <MdEditor :editorId="id" v-model="pVal.history[index].msg" previewOnly language="en-US"/> -->

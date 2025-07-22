@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {reactive} from 'vue';
+import {onMounted, reactive} from 'vue';
 import {Ollama} from 'ollama/dist/browser';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
 import { IonGrid, IonRow, IonCol, IonTextarea, IonButton } from '@ionic/vue';
@@ -67,6 +67,17 @@ ohost.port = '11434'; // ポートを変更
 // 初期状態で選択されているサーバーとモデル
 const ollamaServerModel: ollamaServerModelType  = {model: 'qwen3:latest', server: ohost.href};
 
+let systemMsg = ["あなたは優秀なアシスタントです. ", "日本語で回答してください."]
+
+onMounted(async()=>{
+  console.log("onMount")
+  const res = await fetch("/system.md")
+  if(res.ok){
+    systemMsg[0] = await res.text()
+    systemMsg[1] = "日本語で回答してください."
+  }
+})
+
 /** モデルが選択されたときに呼び出される関数  */
 function onModelSelected(payload: {model: string, server: string}) {
   // alert('Selected model: ' + payload.model);
@@ -118,7 +129,8 @@ async function onSubmit() {
 
   if(think_flag){
     // system message
-    send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください.'})
+    const system_msg = systemMsg[0] + "英語で考え、" + systemMsg[1]
+    send_messages.unshift({'role': 'system', 'content': system_msg})
     // リアクティブな変数に回答を格納するためのオブジェクトを作成
     const response = await ollamaServer.chat({
       model: ollamaServerModel.model,
@@ -138,7 +150,8 @@ async function onSubmit() {
   }
   else{
     // system message
-    send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 日本語で回答してください.'})
+    const system_msg = systemMsg[0] + systemMsg[1]
+    send_messages.unshift({'role': 'system', 'content': system_msg})
     // リアクティブな変数に回答を格納するためのオブジェクトを作成
     const response = await ollamaServer.chat({
       model: ollamaServerModel.model,

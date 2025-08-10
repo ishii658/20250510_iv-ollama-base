@@ -49,7 +49,7 @@ const pVal = reactive<pValType>({
   history: [],
   del_toggle: false,
   think_toggle: false,
-  history_toggle: false,
+  history_toggle: true,
   img:""
 });
 
@@ -111,7 +111,7 @@ async function onSubmit() {
   let think_flag = false
   // modelが qwen3 で think モード出ないときは /no_think をつける
   if(pVal.think_toggle){
-    if(ollamaServerModel.model.includes("qwen3")||ollamaServerModel.model.includes("deepseek-r1")||ollamaServerModel.model.includes("magistral:")){
+    if(ollamaServerModel.model.includes("qwen3")||ollamaServerModel.model.includes("deepseek-r1")||ollamaServerModel.model.includes("magistral:")||ollamaServerModel.model.includes("gpt-oss")){
       think_flag = true
     }
   }
@@ -119,6 +119,8 @@ async function onSubmit() {
   if(think_flag){
     // system message
     send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください.'})
+    // Low,Medium,High
+    // send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください. Reasoning:Low'})
     // リアクティブな変数に回答を格納するためのオブジェクトを作成
     const response = await ollamaServer.chat({
       model: ollamaServerModel.model,

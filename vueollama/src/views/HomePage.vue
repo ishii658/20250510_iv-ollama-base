@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import {reactive} from 'vue';
+import {reactive, ref, watch} from 'vue';
 import {Ollama} from 'ollama/dist/browser';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-import { IonGrid, IonRow, IonCol, IonTextarea, IonButton } from '@ionic/vue';
+import { IonGrid, IonRow, IonCol, IonTextarea, IonButton, IonModal } from '@ionic/vue';
+import axios from 'axios';
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import 'md-editor-v3/lib/style.css';
+import {useCategoryStore} from "../stores/history";
+import {storeToRefs} from "pinia";
 import {splitThinkContent} from '../util/separateTagContent';
 import think from '../components/tt.vue';
 
@@ -13,11 +16,15 @@ import selectModel from '../components/selectModel.vue';
 import ImgageUploader from '@/components/ImageUploader.vue'
 
 import mdp from '../components/mdview.vue';
+import SaveModal from '../components/saveModal.vue';
 
 // markdown preview
 const id = 'preview-only';
 // const scrollElement = document.documentElement;
 const scrollElement = document.querySelector('ion-content');
+
+const store = useCategoryStore()
+const {history} = storeToRefs(store)
 
 /** リアクティブな変数のための型 */
 interface pValType {
@@ -61,11 +68,24 @@ interface ollamaServerModelType {
   server: string;
 }
 
+const showModal = ref(false);
+
 const ohost = new URL(window.location.origin); // 現在の URL を取得
 ohost.port = '11434'; // ポートを変更
 
 // 初期状態で選択されているサーバーとモデル
 const ollamaServerModel: ollamaServerModelType  = {model: 'qwen3:latest', server: ohost.href};
+
+/**
+ *  履歴の監視
+ */
+watch(history, (newVal)=>{
+  pVal.history = []
+  for(let i=0;i<newVal.length;i++){
+    const tmp_val = newVal[i];
+    pVal.history.push(tmp_val);
+  }
+})
 
 /** モデルが選択されたときに呼び出される関数  */
 function onModelSelected(payload: {model: string, server: string}) {
@@ -194,6 +214,37 @@ function handleImageUploaded(base64: string): void {
   pVal.img = base64.split(",")[1]
 }
 
+// 保存ボタン click
+function save_btn_click():void
+{
+  if(pVal.history.length != 0){
+    showModal.value = true
+  }
+}
+
+// 保存
+async function handleSave(formData: { title: string; description: string }):Promise<void>
+{
+  const payload = {
+    title: formData.title,
+    description: formData.description,
+    md_list: pVal.history,
+  };
+
+  try {
+    const res = await axios.post('/save_markdown', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('保存成功', res.data);
+    // data.msg, data.status: ok,error
+  } catch (err) {
+    console.error('エラー:', err);
+  }
+}
+
 </script>
 
 <template>
@@ -269,7 +320,16 @@ function handleImageUploaded(base64: string): void {
             <ion-button expand="block" @click="clearHistory" v-if="!pVal.qBusy" style="margin-top: -2px;">clear</ion-button>
           </ion-col>
         </ion-row>
-      </ion-grid>    
+        <ion-row>
+          <ion-col>
+            <ion-button @click="save_btn_click">保存</ion-button>
+            <ion-button router-link="/memolist">メモ一覧</ion-button>
+          </ion-col>
+        </ion-row>
+      </ion-grid>  
+      <ion-modal :is-open="showModal" @didDismiss="showModal = false">
+        <SaveModal @submit="handleSave" @close="showModal = false" />
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>

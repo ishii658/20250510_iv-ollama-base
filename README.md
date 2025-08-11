@@ -126,3 +126,35 @@ yarn build
 ```
 
 dist 以下に build 結果が出力されます。
+
+
+# 保存データ
+
+以下のテーブル構造
+
+```mermaid
+erDiagram
+    memo ||--o{ memo_md : "1 : N"
+    
+    memo {
+        id int primary key
+        title text
+        description text
+    }
+    
+    memo_md {
+        id int primary key
+        memoid int
+        model text
+        msg text
+    }
+```
+
+# 備考メモ
+
+## plantuml
+
+図の作成に使った。
+* VSCode PlantUML(jebbs 2,869,048(102) Rich PlantUML support for Visual Studio Code.)
+* java 
+* graphviz

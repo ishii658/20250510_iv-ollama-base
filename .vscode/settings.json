@@ -1,0 +1,76 @@
+{
+  // ===== pythonの設定 ===================
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "editor.formatOnSaveMode": "file",
+    "editor.codeActionsOnSave": {
+      // 保存時に実行する
+      // "source.fixAll": "always", // (登録した)fixAllを実行。
+      // "source.fixAll.ruff": "always", // ruffのfixAllを明示的に使用。
+      "source.organizeImports": "always", // (登録した)organizeImportsを実行。
+      "source.organizeImports.ruff": "always" //ruffのorganizeImportsを明示的に使用。
+    }
+  },
+
+  // ruff
+  "ruff.lineLength": 180,
+  "ruff.lint.select": ["ALL"],
+  "ruff.lint.ignore": [
+    "B008", // デフォルト引数で関数呼び出し
+    "B904", // HTTPException 例外で from e 省略
+    "FA102" // Missing `from __future__ import annotations`, but uses PEP 604 union
+  ],
+  
+  // ここからPylanceの型チェック設定
+  "python.analysis.typeCheckingMode": "strict", // 推奨: 厳密な型チェックを有効にする
+  "python.analysis.diagnosticSeverityOverrides": {
+      "reportMissingModuleSource": "none", // モジュールソースが見つからない警告を非表示 (任意)
+      "reportGeneralTypeIssues": "warning", // 一般的な型関連の問題を警告として表示 (デフォルトがwarningなので、明示的に設定するなら)
+      "reportFunctionMember": "warning", // 関数メンバー（引数、戻り値など）に関する問題を警告として表示 (Pylanceのデフォルトによっては必要)
+      "reportCallIssue": "warning" // 関数呼び出しの問題（引数の数など）を警告として表示 (Pylanceのデフォルトによっては必要)
+  },
+  "python.analysis.inlayHints.functionReturnTypes": true, // 関数の戻り値型ヒントを表示 (任意)
+  "python.analysis.inlayHints.variableTypes": true, // 変数型ヒントを表示 (任意)
+
+  // ==== Vuejs 設定 ==========================
+  // ====== Vuejs ====
+  // ファイルの関連付けと Vue モード
+  "files.associations": {
+    "*.vue": "vue"
+  },
+  // ESLint を保存時に実行 . 上記python部分に記載
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+    "vue"
+  ],
+
+  "[vue]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave":{
+      "source.fixAll": "always", // (デフォルトに設定されているもので)fixAllを実行。
+      "source.fixAll.eslint": "always" // ESLint      
+    }
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave":{
+      "source.fixAll": "always", // (デフォルトに設定されているもので)fixAllを実行。
+      "source.fixAll.eslint": "always" // ESLint      
+    }
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave":{
+      "source.fixAll": "always", // (デフォルトに設定されているもので)fixAllを実行。
+      "source.fixAll.eslint": "always" // ESLint      
+    }
+  },
+  "python-envs.pythonProjects": []
+}

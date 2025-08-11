@@ -16,6 +16,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/save_markdown': 'http://localhost:8000/',
+      '/get_memo_list': 'http://localhost:8000/',
+      '/get_memo': 'http://localhost:8000/'
+    }
+  },
   build:{
     minify: 'terser',
     sourcemap: true,

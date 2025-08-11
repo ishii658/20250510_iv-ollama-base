@@ -20,9 +20,11 @@
     "@capacitor/status-bar": "7.0.1",
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
+    "axios": "^1.11.0",
     "ionicons": "^7.0.0",
     "md-editor-v3": "^5.5.1",
     "ollama": "^0.5.16",
+    "pinia": "^3.0.3",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0"
   },

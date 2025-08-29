@@ -1,404 +1,530 @@
 <script setup lang="ts">
-import {reactive, ref, watch} from 'vue';
-import {Ollama} from 'ollama/dist/browser';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-import { IonGrid, IonRow, IonCol, IonTextarea, IonButton, IonModal } from '@ionic/vue';
-import axios from 'axios';
-import { MdPreview } from 'md-editor-v3';
-import 'md-editor-v3/lib/preview.css';
-import 'md-editor-v3/lib/style.css';
-import {useCategoryStore} from "../stores/history";
-import {storeToRefs} from "pinia";
-import {splitThinkContent} from '../util/separateTagContent';
-import think from '../components/tt.vue';
+import { reactive, ref, watch } from "vue";
+import { Ollama } from "ollama/dist/browser";
+import {
+    IonContent,
+    IonHeader,
+    IonPage,
+    IonTitle,
+    IonToolbar,
+} from "@ionic/vue";
+import {
+    IonGrid,
+    IonRow,
+    IonCol,
+    IonTextarea,
+    IonButton,
+    IonModal,
+} from "@ionic/vue";
+import axios from "axios";
+import { MdPreview } from "md-editor-v3";
+import "md-editor-v3/lib/preview.css";
+import "md-editor-v3/lib/style.css";
+import { useCategoryStore } from "../stores/history";
+import { storeToRefs } from "pinia";
+import { splitThinkContent } from "../util/separateTagContent";
+import think from "../components/tt.vue";
 
-import selectModel from '../components/selectModel.vue';
-import ImgageUploader from '@/components/ImageUploader.vue'
+import selectModel from "../components/selectModel.vue";
+import ImgageUploader from "@/components/ImageUploader.vue";
 
-import mdp from '../components/mdview.vue';
-import SaveModal from '../components/saveModal.vue';
+import mdp from "../components/mdview.vue";
+import SaveModal from "../components/saveModal.vue";
 
 // markdown preview
-const id = 'preview-only';
+const id = "preview-only";
 // const scrollElement = document.documentElement;
-const scrollElement = document.querySelector('ion-content');
+const scrollElement = document.querySelector("ion-content");
 
-const store = useCategoryStore()
-const {history} = storeToRefs(store)
+const store = useCategoryStore();
+const { history } = storeToRefs(store);
 
 /** リアクティブな変数のための型 */
 interface pValType {
-  /** LLM への質問 */
-  question: string;
-  /** LLM の応答 */
-  answer: string;
-  /** LLM think */
-  think: string;
-  /** LLM問い合わせ中 */
-  qBusy: boolean;
-  /** 履歴 model: user|モデル名|think */
-  history: {msg:string, model:string}[];
+    /** LLM への質問 */
+    question: string;
+    /** LLM の応答 */
+    answer: string;
+    /** LLM think */
+    think: string;
+    /** LLM問い合わせ中 */
+    qBusy: boolean;
+    /** 履歴 model: user|モデル名|think */
+    history: { msg: string; model: string }[];
 
-  del_toggle: boolean;
-  think_toggle: boolean;
-  history_toggle: boolean;
+    del_toggle: boolean;
+    think_toggle: boolean;
+    history_toggle: boolean;
 
-  /** 画像 base64 */
-  img: string;
+    /** 画像 base64 */
+    img: string;
 }
 
 /** リアクティブな変数 */
 const pVal = reactive<pValType>({
-  question: '',
-  answer: '',
-  think: '',
-  qBusy: false,
-  history: [],
-  del_toggle: false,
-  think_toggle: false,
-  history_toggle: true,
-  img:""
+    question: "",
+    answer: "",
+    think: "",
+    qBusy: false,
+    history: [],
+    del_toggle: false,
+    think_toggle: false,
+    history_toggle: true,
+    img: "",
 });
 
 /** ollama サーバーURL とモデル */
 interface ollamaServerModelType {
-  /** LLM モデル */
-  model: string;
-  /** サーバー URL */
-  server: string;
+    /** LLM モデル */
+    model: string;
+    /** サーバー URL */
+    server: string;
 }
 
 const showModal = ref(false);
 
 const ohost = new URL(window.location.origin); // 現在の URL を取得
-ohost.port = '11434'; // ポートを変更
+ohost.port = "11434"; // ポートを変更
 
 // 初期状態で選択されているサーバーとモデル
-const ollamaServerModel: ollamaServerModelType  = {model: 'qwen3:latest', server: ohost.href};
+const ollamaServerModel: ollamaServerModelType = {
+    model: "qwen3:latest",
+    server: ohost.href,
+};
 
 /**
  *  履歴の監視
  */
-watch(history, (newVal)=>{
-  pVal.history = []
-  for(let i=0;i<newVal.length;i++){
-    const tmp_val = newVal[i];
-    pVal.history.push(tmp_val);
-  }
-})
+watch(history, (newVal) => {
+    pVal.history = [];
+    for (let i = 0; i < newVal.length; i++) {
+        const tmp_val = newVal[i];
+        pVal.history.push(tmp_val);
+    }
+});
 
 /** モデルが選択されたときに呼び出される関数  */
-function onModelSelected(payload: {model: string, server: string}) {
-  // alert('Selected model: ' + payload.model);
-  ollamaServerModel.model = payload.model;
-  ollamaServerModel.server = payload.server;
+function onModelSelected(payload: { model: string; server: string }) {
+    // alert('Selected model: ' + payload.model);
+    ollamaServerModel.model = payload.model;
+    ollamaServerModel.server = payload.server;
 }
 
 async function onSubmit() {
-  // ボタンを消す
-  pVal.qBusy = true;
-  // 回答をクリアする
-  pVal.answer = '';
-  pVal.think = '';
+    // ボタンを消す
+    pVal.qBusy = true;
+    // 回答をクリアする
+    pVal.answer = "";
+    pVal.think = "";
 
-  const ollamaServer = new Ollama({host: ollamaServerModel.server}); // サーバーの URL を指定
+    const ollamaServer = new Ollama({ host: ollamaServerModel.server }); // サーバーの URL を指定
 
-  const send_messages = [];
-  // 問
-  // send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
+    const send_messages = [];
+    // 問
+    // send_messages.push({'role': 'system', 'content': 'あなたはアシスタントです.'})
 
-  // 履歴問い合わせのときは、今までのものを入れる
-  if(pVal.history_toggle){
-    for(let i=0; i<pVal.history.length; i++){
-      const row = pVal.history[i];
-      const model = row.model;
-      if( model == "user" ){
-        send_messages.push({'role': 'user', 'content': row.msg});
-      }
-      else{
-        send_messages.push({'role': 'assistant', 'content': row.msg});
-      }
+    // 履歴問い合わせのときは、今までのものを入れる
+    if (pVal.history_toggle) {
+        for (let i = 0; i < pVal.history.length; i++) {
+            const row = pVal.history[i];
+            const model = row.model;
+            if (model == "user") {
+                send_messages.push({ role: "user", content: row.msg });
+            } else {
+                send_messages.push({ role: "assistant", content: row.msg });
+            }
+        }
     }
-  }
 
-  // 最終質問を追加
-  if(pVal.img == ''){
-    send_messages.push({'role': 'user', 'content': pVal.question})
-  }else{
-    send_messages.push({'role': 'user', 'content': pVal.question, 'images': [pVal.img]})
-  }
-
-  let think_flag = false
-  // modelが qwen3 で think モード出ないときは /no_think をつける
-  if(pVal.think_toggle){
-    if(ollamaServerModel.model.includes("qwen3")||ollamaServerModel.model.includes("deepseek-r1")||ollamaServerModel.model.includes("magistral:")||ollamaServerModel.model.includes("gpt-oss")){
-      think_flag = true
+    // 最終質問を追加
+    if (pVal.img == "") {
+        send_messages.push({ role: "user", content: pVal.question });
+    } else {
+        send_messages.push({
+            role: "user",
+            content: pVal.question,
+            images: [pVal.img],
+        });
     }
-  }
 
-  if(think_flag){
-    // system message
-    send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください.'})
-    // Low,Medium,High
-    // send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください. Reasoning:Low'})
-    // リアクティブな変数に回答を格納するためのオブジェクトを作成
-    const response = await ollamaServer.chat({
-      model: ollamaServerModel.model,
-      messages: send_messages,
-      stream: true,
-      think: true,
-      options: {
-         num_ctx: 12000
-      }
-    });
+    let think_flag = false;
+    // modelが qwen3 で think モード出ないときは /no_think をつける
+    if (pVal.think_toggle) {
+        if (
+            ollamaServerModel.model.includes("qwen3") ||
+            ollamaServerModel.model.includes("deepseek-r1") ||
+            ollamaServerModel.model.includes("magistral:") ||
+            ollamaServerModel.model.includes("gpt-oss")
+        ) {
+            think_flag = true;
+        }
+    }
+
+    if (think_flag) {
+        // system message
+        send_messages.unshift({
+            role: "system",
+            content:
+                "あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください.",
+        });
+        // Low,Medium,High
+        // send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 英語で考え、日本語で回答してください. Reasoning:Low'})
+        // リアクティブな変数に回答を格納するためのオブジェクトを作成
+        const response = await ollamaServer.chat({
+            model: ollamaServerModel.model,
+            messages: send_messages,
+            stream: true,
+            think: true,
+            options: {
+                num_ctx: 12000,
+            },
+        });
         // 回答取得
-    for await (const part of response) {
-      pVal.answer += part.message.content;
-      if(part.message.thinking !== undefined)
-        pVal.think += part.message.thinking;
+        for await (const part of response) {
+            pVal.answer += part.message.content;
+            if (part.message.thinking !== undefined)
+                pVal.think += part.message.thinking;
+        }
+    } else {
+        // system message
+        send_messages.unshift({
+            role: "system",
+            content:
+                "あなたは優秀なアシスタントです. 日本語で回答してください.",
+        });
+        // リアクティブな変数に回答を格納するためのオブジェクトを作成
+        const response = await ollamaServer.chat({
+            model: ollamaServerModel.model,
+            messages: send_messages,
+            stream: true,
+            think: false,
+            options: {
+                num_ctx: 12000,
+            },
+        });
+        // 回答取得
+        for await (const part of response) {
+            pVal.answer += part.message.content;
+        }
     }
-  }
-  else{
-    // system message
-    send_messages.unshift({'role': 'system', 'content': 'あなたは優秀なアシスタントです. 日本語で回答してください.'})
-    // リアクティブな変数に回答を格納するためのオブジェクトを作成
-    const response = await ollamaServer.chat({
-      model: ollamaServerModel.model,
-      messages: send_messages,
-      stream: true,
-      think:false,
-      options: {
-         num_ctx: 12000
-      }
-    });
-    // 回答取得
-    for await (const part of response) {
-      pVal.answer += part.message.content;
-    }
-  }
 
+    pVal.qBusy = false;
 
-  pVal.qBusy = false;
+    // 履歴に追加
+    pVal.history.push({ msg: pVal.question, model: "user" });
 
-  // 履歴に追加
-  pVal.history.push({msg: pVal.question, model: "user"});
+    // think の中身を履歴に追加
+    pVal.history.push({ msg: pVal.think, model: "think" });
 
-  // think の中身を履歴に追加
-  pVal.history.push({msg: pVal.think, model: "think"})
+    // 回答を履歴に
+    pVal.history.push({ msg: pVal.answer, model: ollamaServerModel.model });
 
-  // 回答を履歴に
-  pVal.history.push({msg: pVal.answer, model: ollamaServerModel.model})
-
-  // 回答領域をクリア
-  pVal.question = '';
-  pVal.answer = '';
-  pVal.think = '';
+    // 回答領域をクリア
+    pVal.question = "";
+    pVal.answer = "";
+    pVal.think = "";
 }
 
 function onClickHistory(index: number) {
-  if(pVal.del_toggle){
-    // 履歴から選択されたメッセージを削除
-    pVal.history.splice(index, 1);
-  }
+    if (pVal.del_toggle) {
+        // 履歴から選択されたメッセージを削除
+        pVal.history.splice(index, 1);
+    }
 }
 
-function clearHistory(){
-  pVal.history = [];
-  pVal.question = "";
-  pVal.answer = "";
-  pVal.think = "";
+function clearHistory() {
+    pVal.history = [];
+    pVal.question = "";
+    pVal.answer = "";
+    pVal.think = "";
 }
 
 // 画像追加
 function handleImageUploaded(base64: string): void {
-  pVal.img = base64.split(",")[1]
+    pVal.img = base64.split(",")[1];
 }
 
 // 保存ボタン click
-function save_btn_click():void
-{
-  if(pVal.history.length != 0){
-    showModal.value = true
-  }
+function save_btn_click(): void {
+    if (pVal.history.length != 0) {
+        showModal.value = true;
+    }
 }
 
 // 保存
-async function handleSave(formData: { title: string; description: string }):Promise<void>
-{
-  const payload = {
-    title: formData.title,
-    description: formData.description,
-    md_list: pVal.history,
-  };
+async function handleSave(formData: {
+    title: string;
+    description: string;
+}): Promise<void> {
+    const payload = {
+        title: formData.title,
+        description: formData.description,
+        md_list: pVal.history,
+    };
 
-  try {
-    const res = await axios.post('/save_markdown', payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    try {
+        const res = await axios.post("/save_markdown", payload, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
 
-    console.log('保存成功', res.data);
-    // data.msg, data.status: ok,error
-  } catch (err) {
-    console.error('エラー:', err);
-  }
+        console.log("保存成功", res.data);
+        // data.msg, data.status: ok,error
+    } catch (err) {
+        console.error("エラー:", err);
+    }
 }
 
+/** History入力
+ *
+ */
+function addHistory() {
+    pVal.history.push({ model: "user", msg: pVal.question });
+}
 </script>
 
 <template>
-  <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>Ollama
-        <ion-button @click="clearHistory" v-if="!pVal.qBusy" style="margin-top: -2px;">clear</ion-button>
-        </ion-title>
-        <selectModel @modelSelected="onModelSelected" 
-                     v-model:del_toggle="pVal.del_toggle" 
-                     v-model:think_toggle="pVal.think_toggle" 
-                     v-model:history_toggle="pVal.history_toggle"
-        ></selectModel>
-      </ion-toolbar>
-    </ion-header>
+    <ion-page>
+        <ion-header :translucent="true">
+            <ion-toolbar>
+                <ion-title
+                    >Ollama
+                    <ion-button
+                        @click="clearHistory"
+                        v-if="!pVal.qBusy"
+                        style="margin-top: -2px"
+                        >clear</ion-button
+                    >
+                </ion-title>
+                <selectModel
+                    @modelSelected="onModelSelected"
+                    v-model:del_toggle="pVal.del_toggle"
+                    v-model:think_toggle="pVal.think_toggle"
+                    v-model:history_toggle="pVal.history_toggle"
+                ></selectModel>
+            </ion-toolbar>
+        </ion-header>
 
-    <ion-content :fullscreen="true">
-      <ion-grid>
-        <ion-row>
-          <!-- 履歴のループ -->
-          <ion-col size="12">
-            <ion-row v-for="(item, index) in pVal.history" :key="index" class="historyarea">
-              <!-- モデル名 -->
-              <ion-col size="12" class="modelstr" v-if="pVal.history[index].msg !== ''">
-                {{ pVal.history[index].model }}
-              </ion-col>
-              <!-- 過去の履歴 -->
-              <ion-col size="12" class="history" v-if="pVal.history[index].msg !== ''">
-                <!-- model が user, think, それ以外で分ける. v-if で分ける -->
+        <ion-content :fullscreen="true">
+            <ion-grid>
                 <ion-row>
-                  <ion-col v-if="pVal.history[index].model === 'user'" class="userstr" size="12" @click="onClickHistory(index)">
-                    <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
-                    <mdp :markdown="pVal.history[index].msg"></mdp>
-                  </ion-col>
-                  <ion-col v-else-if="pVal.history[index].model === 'think'" class="thinkstr" size="12" @click="onClickHistory(index)">
-                    <think class="think">
-                      <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
-                      <mdp :markdown="pVal.history[index].msg"></mdp>
-                    </think>
-                  </ion-col>
-                  <ion-col v-else class="otherstr" size="12" @click="onClickHistory(index)">
-                    <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
-                    <mdp :markdown="pVal.history[index].msg"></mdp>
-                  </ion-col>
-                </ion-row>
-                <!-- <MdEditor :editorId="id" v-model="pVal.history[index].msg" previewOnly language="en-US"/> -->
-                <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
-                <!-- <MdCatalog :editorId="id" :scrollElement="scrollElement" />         -->
-              </ion-col>
-            </ion-row>
-          </ion-col>
+                    <!-- 履歴のループ -->
+                    <ion-col size="12">
+                        <ion-row
+                            v-for="(item, index) in pVal.history"
+                            :key="index"
+                            class="historyarea"
+                        >
+                            <!-- モデル名 -->
+                            <ion-col
+                                size="12"
+                                class="modelstr"
+                                v-if="pVal.history[index].msg !== ''"
+                            >
+                                {{ pVal.history[index].model }}
+                            </ion-col>
+                            <!-- 過去の履歴 -->
+                            <ion-col
+                                size="12"
+                                class="history"
+                                v-if="pVal.history[index].msg !== ''"
+                            >
+                                <!-- model が user, think, それ以外で分ける. v-if で分ける -->
+                                <ion-row>
+                                    <ion-col
+                                        v-if="
+                                            pVal.history[index].model === 'user'
+                                        "
+                                        class="userstr"
+                                        size="12"
+                                        @click="onClickHistory(index)"
+                                    >
+                                        <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                                        <mdp
+                                            :markdown="pVal.history[index].msg"
+                                        ></mdp>
+                                    </ion-col>
+                                    <ion-col
+                                        v-else-if="
+                                            pVal.history[index].model ===
+                                            'think'
+                                        "
+                                        class="thinkstr"
+                                        size="12"
+                                        @click="onClickHistory(index)"
+                                    >
+                                        <think class="think">
+                                            <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                                            <mdp
+                                                :markdown="
+                                                    pVal.history[index].msg
+                                                "
+                                            ></mdp>
+                                        </think>
+                                    </ion-col>
+                                    <ion-col
+                                        v-else
+                                        class="otherstr"
+                                        size="12"
+                                        @click="onClickHistory(index)"
+                                    >
+                                        <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                                        <mdp
+                                            :markdown="pVal.history[index].msg"
+                                        ></mdp>
+                                    </ion-col>
+                                </ion-row>
+                                <!-- <MdEditor :editorId="id" v-model="pVal.history[index].msg" previewOnly language="en-US"/> -->
+                                <!-- <MdPreview :editorId="id" :modelValue="pVal.history[index].msg" language="en-US" /> -->
+                                <!-- <MdCatalog :editorId="id" :scrollElement="scrollElement" />         -->
+                            </ion-col>
+                        </ion-row>
+                    </ion-col>
 
-          <ion-col size="12" v-if="pVal.think !== ''">
-            <MdPreview :editorId="id" :modelValue="pVal.think" language="en-US" />
-          </ion-col>
-          <ion-col size="12">
-            <MdPreview :editorId="id" :modelValue="pVal.answer" language="en-US" />
-            <!-- <MdCatalog :editorId="id" :scrollElement="scrollElement" /> -->
-          </ion-col>
-          <ion-col size="12">
-            <ion-textarea aria-label="query" fill="outline" :auto-grow="true" v-model="pVal.question">
-            </ion-textarea>
-            <ImgageUploader @image-uploaded="handleImageUploaded"
-            v-if="ollamaServerModel.model.includes('gemma3:') || ollamaServerModel.model.includes('qwen2.5vl:')">img</ImgageUploader>
-          </ion-col>
-        </ion-row>
-        <ion-row>
-          <ion-col size="9">
-            <ion-button expand="block" @click="onSubmit" v-if="!pVal.qBusy" style="margin-top: -2px;">実行</ion-button>
-          </ion-col>
-          <ion-col size="3">
-            <ion-button expand="block" @click="clearHistory" v-if="!pVal.qBusy" style="margin-top: -2px;">clear</ion-button>
-          </ion-col>
-        </ion-row>
-        <ion-row>
-          <ion-col>
-            <ion-button @click="save_btn_click">保存</ion-button>
-            <ion-button router-link="/memolist">メモ一覧</ion-button>
-          </ion-col>
-        </ion-row>
-      </ion-grid>  
-      <ion-modal :is-open="showModal" @didDismiss="showModal = false">
-        <SaveModal @submit="handleSave" @close="showModal = false" />
-      </ion-modal>
-    </ion-content>
-  </ion-page>
+                    <ion-col size="12" v-if="pVal.think !== ''">
+                        <MdPreview
+                            :editorId="id"
+                            :modelValue="pVal.think"
+                            language="en-US"
+                        />
+                    </ion-col>
+                    <ion-col size="12">
+                        <MdPreview
+                            :editorId="id"
+                            :modelValue="pVal.answer"
+                            language="en-US"
+                        />
+                        <!-- <MdCatalog :editorId="id" :scrollElement="scrollElement" /> -->
+                    </ion-col>
+                    <ion-col size="12">
+                        <ion-textarea
+                            aria-label="query"
+                            fill="outline"
+                            :auto-grow="true"
+                            v-model="pVal.question"
+                        >
+                        </ion-textarea>
+                        <ImgageUploader
+                            @image-uploaded="handleImageUploaded"
+                            v-if="
+                                ollamaServerModel.model.includes('gemma3:') ||
+                                ollamaServerModel.model.includes('qwen2.5vl:')
+                            "
+                            >img</ImgageUploader
+                        >
+                    </ion-col>
+                </ion-row>
+                <ion-row>
+                    <ion-col size="6">
+                        <ion-button
+                            expand="block"
+                            @click="onSubmit"
+                            v-if="!pVal.qBusy"
+                            style="margin-top: -2px"
+                            >実行</ion-button
+                        >
+                    </ion-col>
+                    <ion-col size="3">
+                        <ion-button
+                            expand="block"
+                            @click="addHistory"
+                            v-if="!pVal.qBusy"
+                            style="margin-top: -2px"
+                            >in</ion-button
+                        >
+                    </ion-col>
+                    <ion-col size="3">
+                        <ion-button
+                            expand="block"
+                            @click="clearHistory"
+                            v-if="!pVal.qBusy"
+                            style="margin-top: -2px"
+                            >clear</ion-button
+                        >
+                    </ion-col>
+                </ion-row>
+                <ion-row>
+                    <ion-col>
+                        <ion-button @click="save_btn_click">保存</ion-button>
+                        <ion-button router-link="/memolist"
+                            >メモ一覧</ion-button
+                        >
+                    </ion-col>
+                </ion-row>
+            </ion-grid>
+            <ion-modal :is-open="showModal" @didDismiss="showModal = false">
+                <SaveModal @submit="handleSave" @close="showModal = false" />
+            </ion-modal>
+        </ion-content>
+    </ion-page>
 </template>
 
 <style scoped>
 #container {
-  text-align: center;
-  
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+    text-align: center;
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 #container strong {
-  font-size: 20px;
-  line-height: 26px;
+    font-size: 20px;
+    line-height: 26px;
 }
 
 #container p {
-  font-size: 16px;
-  line-height: 22px;
-  
-  color: #8c8c8c;
-  
-  margin: 0;
+    font-size: 16px;
+    line-height: 22px;
+
+    color: #8c8c8c;
+
+    margin: 0;
 }
 
 #container a {
-  text-decoration: none;
+    text-decoration: none;
 }
 
 .modelstr {
-  margin-top: 0%;
-  padding-top: -0px;
-  padding-bottom: 0;
-  margin-left: -0px;
-  margin-bottom: -2px;
-  font-size:x-small;
-  background-color: antiquewhite;
-  z-index: 200;
+    margin-top: 0%;
+    padding-top: -0px;
+    padding-bottom: 0;
+    margin-left: -0px;
+    margin-bottom: -2px;
+    font-size: x-small;
+    background-color: antiquewhite;
+    z-index: 200;
 }
 
-.history{
-  margin-top: -6px;
-  z-index: 100;
+.history {
+    margin-top: -6px;
+    z-index: 100;
 }
 
 .historyarea {
-  border: 2px solid green;
-  border-radius: 5px;
-  margin-top: 2px;
+    border: 2px solid green;
+    border-radius: 5px;
+    margin-top: 2px;
 }
 
-.userstr{
-  background-color: aliceblue;
+.userstr {
+    background-color: aliceblue;
 }
 
-.thinkstr{
-  background-color: lightyellow;
+.thinkstr {
+    background-color: lightyellow;
 }
 
-.otherstr{
-  background-color: rgb(247, 242, 236);
+.otherstr {
+    background-color: rgb(247, 242, 236);
 }
 
-.think{
-  padding: 0px;
-  margin: 0px;
+.think {
+    padding: 0px;
+    margin: 0px;
 }
 </style>

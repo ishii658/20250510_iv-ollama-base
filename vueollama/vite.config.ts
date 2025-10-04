@@ -20,7 +20,8 @@ export default defineConfig({
     proxy: {
       '/save_markdown': 'http://localhost:8000/',
       '/get_memo_list': 'http://localhost:8000/',
-      '/get_memo': 'http://localhost:8000/'
+      '/get_memo': 'http://localhost:8000/',
+      '/del_markdown': 'http://localhost:8000/'
     }
   },
   build:{

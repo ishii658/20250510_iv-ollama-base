@@ -76,6 +76,28 @@ async def save_markdown(data: MarkdownDataType) -> dict[str, Any]:
     return {"status": "ok"}
 
 
+@app.get("/del_markdown")
+async def del_markdown(category: str, memoid: int) -> dict[str, Any]:
+    """Markdownデータを削除.
+
+    Args:
+       category (str): カテゴリ名
+       memoid (int): メモID
+
+    Returns:
+      dict[str, Any]: 結果
+
+    """
+    try:
+        db = Db(category)
+        db.del_memo(memoid)
+    except Exception:  # noqa: BLE001
+        msg = traceback.format_exc()
+        return {"status": "error", "msg": msg}
+
+    return {"status": "ok"}
+
+
 # Catch-all ルートSPA 用の対応
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str) -> FileResponse:

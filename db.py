@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS memo_md (
     memoid INTEGER,
     model TEXT,
     msg TEXT,
-    FOREIGN KEY (memoid) REFERENCES memo(id)
+    FOREIGN KEY (memoid) REFERENCES memo(id) ON DELETE CASCADE
 )
 """
 
@@ -225,3 +225,28 @@ class Db:
 
         # memoの中身を保存
         self._save_markdown(memoid, md_data)
+
+    def del_memo(self, md_id: int) -> None:
+        """メモを削除.
+
+        Args:
+            md_id (int): memo id
+            category (str): カテゴリ
+
+        """
+        con = sqlite3.connect(f"{self.category}.sqlite3")
+        con.execute("PRAGMA foreign_keys = ON;")
+        cur = con.cursor()
+        try:
+            # memo テーブルから id = 1 のデータを削除
+            con.execute("DELETE FROM memo WHERE id = ?", (md_id,))
+            con.commit()
+        except sqlite3.DatabaseError as e:
+            con.rollback()
+            raise sqlite3.DatabaseError from e
+        except Exception as e:
+            con.rollback()
+            raise Exception from e  # noqa: TRY002
+        finally:
+            cur.close()
+            con.close()

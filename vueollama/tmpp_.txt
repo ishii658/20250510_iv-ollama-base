@@ -1,0 +1,19 @@
+* テスト計画0724
+    * スレッドグループ
+        * HTTP クッキーマネージャ
+        * CSV Data Set Config : ユーザー認証情報
+        * HTTP リクエスト : csrf
+            * 正規表現抽出 : csrfToken
+        * HTTP リクエスト credentials : POST csrfToken,ユーザー名, パスワード
+        * WebSocket Ping/Pong Frame Filter
+        * WebSocket Open Connection
+        * WebSocket Single Read Sampler : Read_connection_ok
+        * WebSocket Single Write Sampler
+        * WebSocket Single Read Sampler :
+        * CSV Data Set Config : 送信データ読み込み
+        * 定数スループットタイマ :1800
+        * ループコントローラ : 
+            * WebSocket Single Write Sampler: データ送信
+        * WebSocket Single Write Sampler: データ送信終了
+        * WebSocket Single Read Sampler : 処理結果受信
+        * WebSocket Close

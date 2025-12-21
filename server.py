@@ -1,31 +1,34 @@
-"""FastAPIのメモ保存サーバー."""
+"""FastAPI + IonicVue の SPA 配信サーバー."""
 
 import traceback
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+
+# from fastapi.responses import FileResponse  # noqa: ERA001
 from fastapi.staticfiles import StaticFiles
 
 from db import Db, MarkdownDataType
 
 app = FastAPI()
 
-# モダンなパス構築
+# dist ディレクトリ
 dist_dir = Path("vueollama") / "dist"
-index_file = dist_dir / "index.html"
 
 
-@app.get("/get_memo_list")
+# -----------------------------
+# API は /api 以下に集約
+# -----------------------------
+@app.get("/api/get_memo_list")
 async def get_memo_list(category: str) -> list[tuple[int, str, str]]:
-    """Memoリストを取得.
+    """メモリストを取得.
 
     Args:
-        category (str): カテゴリ
+        category (str): _description_
 
     Returns:
-        list[tuple[int, str, str]]: メモのリスト
+        list[tuple[int, str, str]]: _description_
 
     """
     db = Db(category)
@@ -33,88 +36,67 @@ async def get_memo_list(category: str) -> list[tuple[int, str, str]]:
     return memo_list  # noqa: RET504
 
 
-@app.get("/get_memo")
+@app.get("/api/get_memo")
 async def get_memo(category: str, memoid: int) -> dict[str, Any]:
-    """Memoを取得.
+    """メモを取得.
 
     Args:
-        category (str): カテゴリ
-        memoid (int): メモID
+        category (str): _description_
+        memoid (int): _description_
 
     Returns:
-        dict[str, Any]: 結果
+        dict[str, Any]: _description_
 
     """
     try:
         db = Db(category)
         memo = db.get_memo(memoid)
+        return {"status": "ok", "result": memo}  # noqa: TRY300
     except Exception:  # noqa: BLE001
-        msg = traceback.format_exc()
-        return {"status": "error", "msg": msg}
-
-    return {"status": "ok", "result": memo}
+        return {"status": "error", "msg": traceback.format_exc()}
 
 
-@app.post("/save_markdown")
+@app.post("/api/save_markdown")
 async def save_markdown(data: MarkdownDataType) -> dict[str, Any]:
-    """Markdownデータを保存.
+    """やり取りの結果を保存.
 
     Args:
-        data (MarkdownDataType): Markdownデータ
+        data (MarkdownDataType): _description_
 
     Returns:
-        dict[str, Any]: 結果
+        dict[str, Any]: _description_
 
     """
     try:
         db = Db(data.category)
         db.save_memo(data)
+        return {"status": "ok"}  # noqa: TRY300
     except Exception:  # noqa: BLE001
-        msg = traceback.format_exc()
-        return {"status": "error", "msg": msg}
-
-    return {"status": "ok"}
+        return {"status": "error", "msg": traceback.format_exc()}
 
 
-@app.get("/del_markdown")
+@app.get("/api/del_markdown")
 async def del_markdown(category: str, memoid: int) -> dict[str, Any]:
-    """Markdownデータを削除.
+    """保存した履歴を削除.
 
     Args:
-       category (str): カテゴリ名
-       memoid (int): メモID
+        category (str): _description_
+        memoid (int): _description_
 
     Returns:
-      dict[str, Any]: 結果
+        dict[str, Any]: _description_
 
     """
     try:
         db = Db(category)
         db.del_memo(memoid)
+        return {"status": "ok"}  # noqa: TRY300
     except Exception:  # noqa: BLE001
-        msg = traceback.format_exc()
-        return {"status": "error", "msg": msg}
-
-    return {"status": "ok"}
+        return {"status": "error", "msg": traceback.format_exc()}
 
 
-# Catch-all ルートSPA 用の対応
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str) -> FileResponse:
-    """Vuejs のホスト.
-
-    Args:
-        full_path (str): _description_
-
-    Returns:
-        FileResponse: _description_
-
-    """
-    file_path = dist_dir / full_path
-    if file_path.exists() and file_path.is_file():
-        return FileResponse(file_path)
-    return FileResponse(index_file)
-
-
-# 静的ファイルをマウント html=True で index.html 自動提供も可
-app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
+# -----------------------------
+# 静的ファイル (Ionic Vue SPA)
+# -----------------------------
+# html=True → index.html を自動返却（Catch-all 不要）  # noqa: RUF003
+app.mount("/", StaticFiles(directory=dist_dir, html=True), name="spa")

@@ -18,13 +18,13 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/save_markdown': 'http://localhost:8000/',
-      '/get_memo_list': 'http://localhost:8000/',
-      '/get_memo': 'http://localhost:8000/',
-      '/del_markdown': 'http://localhost:8000/'
+      '/api/save_markdown': 'http://localhost:8000/',
+      '/api/get_memo_list': 'http://localhost:8000/',
+      '/api/get_memo': 'http://localhost:8000/',
+      '/api/del_markdown': 'http://localhost:8000/'
     }
   },
-  build:{
+  build: {
     minify: 'terser',
     sourcemap: true,
   },

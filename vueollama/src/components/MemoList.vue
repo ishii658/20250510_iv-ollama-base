@@ -53,7 +53,7 @@ async function btnclick(no: number)
 
 async function fetchMemos() {
   try {
-    const res = await axios.get("/get_memo_list",{params:{category: category}}) 
+    const res = await axios.get("/api/get_memo_list",{params:{category: category}}) 
     memos.value = res.data
 
     // チェックボックス
@@ -78,7 +78,7 @@ async function delClick(index: number, memoid: number){
     return
   }
 
-  const res = await axios.get("/del_markdown",
+  const res = await axios.get("/api/del_markdown",
     {params:{category: category, memoid: memoid}}
   )
 

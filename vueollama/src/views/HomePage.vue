@@ -192,6 +192,12 @@ async function onSubmit() {
             content:
                 "あなたは優秀なアシスタントです. 日本語で回答してください.",
         });
+
+        // OCR のときは
+        if( ollamaServerModel.model.includes("ocr")){
+            send_messages[0].content = "Convert the document to markdown."
+        }
+
         // リアクティブな変数に回答を格納するためのオブジェクトを作成
         const response = await ollamaServer.chat({
             model: ollamaServerModel.model,
@@ -263,7 +269,7 @@ async function handleSave(formData: {
     };
 
     try {
-        const res = await axios.post("/save_markdown", payload, {
+        const res = await axios.post("/api/save_markdown", payload, {
             headers: {
                 "Content-Type": "application/json",
             },
@@ -410,7 +416,8 @@ function addHistory() {
                             v-if="
                                 ollamaServerModel.model.includes('gemma3:') ||
                                 ollamaServerModel.model.includes('qwen2.5vl:') ||
-				ollamaServerModel.model.includes('qwen3-vl')
+				ollamaServerModel.model.includes('qwen3-vl') ||
+                                ollamaServerModel.model.includes('ocr')
                             "
                             >img</ImgageUploader
                         >

@@ -88,7 +88,7 @@ ohost.port = "11434"; // ポートを変更
 
 // 初期状態で選択されているサーバーとモデル
 const ollamaServerModel: ollamaServerModelType = {
-    model: "qwen3:latest",
+    model: "qwen3-coder:30b",
     server: ohost.href,
 };
 
@@ -108,6 +108,17 @@ function onModelSelected(payload: { model: string; server: string }) {
     // alert('Selected model: ' + payload.model);
     ollamaServerModel.model = payload.model;
     ollamaServerModel.server = payload.server;
+
+    if(ollamaServerModel.model.includes("glm-ocr")){
+        pVal.question = "Text Recognition:\nTable Recognition:\nFigure Recognition:"
+    }
+    else if(ollamaServerModel.model.includes("deepseek-ocr")){
+        pVal.question = "Convert the document to markdown.\n"
+        pVal.question += "OCR this image.\n"
+        pVal.question += "Free OCR.\n"
+        pVal.question += "Parse the figure.\n"
+        pVal.question += "Describe this image in detail.\n"
+    } 
 }
 
 async function onSubmit() {
@@ -194,10 +205,17 @@ async function onSubmit() {
         });
 
         // OCR のときは
-        if( ollamaServerModel.model.includes("ocr")){
-            send_messages[0].content = "Convert the document to markdown."
+        if( ollamaServerModel.model.includes("deepseek-ocr")){
+            //send_messages[0].content = "Convert the document to markdown."
+            send_messages[0].content = "You are an OCR model. Extract text from the given image."
+            //send_messages[0].content = "Extract the code from this image as raw text only. Do not use Markdown blocks, do not include any conversational text, and do not add any explanations. Preserve all spaces, tabs, and line breaks exactly as they are. Output only the code itself."
         }
+        else if( ollamaServerModel.model.includes("glm-ocr")){
+            send_messages[0].content = "You are an OCR model. Extract text from the given image."
 
+            // 入力エリアに指示プロンプトを入れる
+            // Text Recognition: , Table Recognition: , Figure Recognition:
+        }
         // リアクティブな変数に回答を格納するためのオブジェクトを作成
         const response = await ollamaServer.chat({
             model: ollamaServerModel.model,

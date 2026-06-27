@@ -432,9 +432,10 @@ function addHistory() {
                         <ImgageUploader
                             @image-uploaded="handleImageUploaded"
                             v-if="
-                                ollamaServerModel.model.includes('gemma3:') ||
+                                ollamaServerModel.model.includes('gemma') ||
                                 ollamaServerModel.model.includes('qwen2.5vl:') ||
 				ollamaServerModel.model.includes('qwen3-vl') ||
+				ollamaServerModel.model.includes('qwen3.5') ||
                                 ollamaServerModel.model.includes('ocr')
                             "
                             >img</ImgageUploader

@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-# from fastapi.responses import FileResponse  # noqa: ERA001
+from fastapi.responses import FileResponse  # noqa: ERA001
 from fastapi.staticfiles import StaticFiles
 
 from db import Db, MarkdownDataType
@@ -99,4 +99,8 @@ async def del_markdown(category: str, memoid: int) -> dict[str, Any]:
 # 静的ファイル (Ionic Vue SPA)
 # -----------------------------
 # html=True → index.html を自動返却（Catch-all 不要）  # noqa: RUF003
+@app.get("/home")
+async def home():
+    return FileResponse(dist_dir / "index.html")
+
 app.mount("/", StaticFiles(directory=dist_dir, html=True), name="spa")
